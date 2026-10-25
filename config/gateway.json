@@ -1,0 +1,28 @@
+{
+  "port": 8300,
+  "host": "0.0.0.0",
+  "public_base_url": "http://127.0.0.1:8300",
+  "db_path": "data/gateway.db",
+  "pricing_file": "config/pricing.json",
+  "providers_file": "config/providers.json",
+  "http_proxy_mode": "direct",
+  "rate_limit_per_min": 120,
+  "admin_token_file": "data/admin_token.txt",
+  "license_secret_file": "data/license_secret.txt",
+  "x402": {
+    "enabled": true,
+    "facilitator": "https://x402.org/facilitator",
+    "network": "base-sepolia",
+    "pay_to": "0x0000000000000000000000000000000000000000",
+    "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "asset_name": "USDC",
+    "asset_version": "2",
+    "max_timeout_seconds": 120,
+    "allow_networks": ["base-sepolia", "base"]
+  },
+  "webhooks": {
+    "wechatpay": { "secret_env": "WECHATPAY_WEBHOOK_SECRET", "credit_unit": "micro_usd" },
+    "alipay": { "secret_env": "ALIPAY_WEBHOOK_SECRET", "credit_unit": "micro_usd" },
+    "stripe": { "secret_env": "STRIPE_WEBHOOK_SECRET", "credit_unit": "micro_usd" }
+  }
+}

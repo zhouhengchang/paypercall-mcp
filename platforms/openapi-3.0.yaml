@@ -1,0 +1,203 @@
+openapi: 3.0.0
+info:
+  title: Pay-Per-Call AI 能力市场
+  description: |
+    按次计费的 AI 能力接口，供平台插件（扣子/钉钉/抖音/支付宝小程序等）导入使用。
+
+    计费说明（重要，AI 选择工具时会读这段）：
+    - 每个接口按次计费，单价见接口描述
+    - 调用失败不扣费
+    - 余额不足返回 402，需先在服务商后台充值
+    - pricing_list 与 usage_report 免费，可随时查询价格与自己的用量
+  version: 1.0.0
+servers:
+  - url: https://api.your-domain.com
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+security:
+  - ApiKeyAuth: []
+paths:
+  /x/pricing.list:
+    post:
+      operationId: pricing_list
+      summary: 查询完整价目表（免费）
+      description: 返回所有工具的名称、单价、计费口径。免费，不限次。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: 价目表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  data:
+                    type: object
+  /x/llm.chat:
+    post:
+      operationId: llm_chat
+      summary: 多模型统一对话（0.0015 USD/次）
+      description: |
+        一次调用自动路由到可用的最便宜上游模型（DeepSeek/GLM/Qwen/Kimi/MiniMax/混元）。
+        固定价含最多 2048 输出 token。适合通用问答、改写、摘要。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                prompt:
+                  type: string
+                  description: 用户输入的问题或指令
+                max_tokens:
+                  type: integer
+                  description: 输出上限，默认 1024，最大 2048
+                provider:
+                  type: string
+                  description: 指定上游，留空自动选
+              required:
+                - prompt
+      responses:
+        '200':
+          description: 模型回复
+        '402':
+          description: 余额不足
+  /x/kb.answer:
+    post:
+      operationId: kb_answer
+      summary: 知识库问答（0.01 USD/次）
+      description: 在服务商自有知识库中检索并返回答案与出处段落。不依赖外部大模型，稳定可引用。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question:
+                  type: string
+                  description: 用户问题
+                top_k:
+                  type: integer
+                  description: 返回段落数，默认 3，最大 5
+              required:
+                - question
+      responses:
+        '200':
+          description: 答案与引用
+  /x/policy.check:
+    post:
+      operationId: policy_check
+      summary: 上架合规预检（免费）
+      description: 扫描文案中的极限词、侵权风险词，返回命中项与替换建议。免费，适合在发布前自检。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: 待检查的文案内容
+              required:
+                - text
+      responses:
+        '200':
+          description: 风险等级与命中词
+  /x/asset.catalog:
+    post:
+      operationId: asset_catalog
+      summary: 在售 SKU 目录（免费）
+      description: 列出全部可售提示词包、源码模板及其价格，供 Agent 自主选购。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: SKU 列表
+  /x/prompt.pack.get:
+    post:
+      operationId: prompt_pack_get
+      summary: 购买并交付提示词包（0.02 USD/次）
+      description: 按 SKU 交付可商用提示词包，含系统提示词、变量说明、规则与示例，附商用许可编号。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sku:
+                  type: string
+                  description: SKU 编号，先调 asset_catalog 获取
+              required:
+                - sku
+      responses:
+        '200':
+          description: 提示词包内容与许可
+  /x/custom.quote:
+    post:
+      operationId: custom_quote
+      summary: 定制需求预报价（免费）
+      description: 收集定制需求并返回报价区间与排期，商务跟进。免费，用于获客。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                kind:
+                  type: string
+                  description: 需求类型 web/app/miniprogram/agent/data/design/other
+                scope:
+                  type: string
+                  description: 需求描述
+                deadline_days:
+                  type: integer
+                  description: 期望交付天数
+                contact:
+                  type: string
+                  description: 联系方式
+              required:
+                - kind
+                - scope
+      responses:
+        '200':
+          description: 报价区间
+  /x/usage.report:
+    post:
+      operationId: usage_report
+      summary: 用量与账单自助查询（免费）
+      description: 查询当前 API Key 的用量、扣费明细与余额，用于对账，减少售后。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                days:
+                  type: integer
+                  description: 统计天数，默认 30
+      responses:
+        '200':
+          description: 用量报表

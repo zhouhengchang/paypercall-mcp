@@ -1,0 +1,21 @@
+{
+  "_comment": "把这个对象合并进客户端的 mcpServers 配置。Claude Desktop / Cursor / Cline / WorkBuddy / Codebuddy 通用。首选 npx 方式（无需克隆代码）。",
+  "mcpServers": {
+    "paypercall": {
+      "command": "npx",
+      "args": ["-y", "paypercall-mcp"],
+      "env": {
+        "PPC_GATEWAY": "https://your-domain.example.com",
+        "PPC_API_KEY": "ppc_live_替换成你的key"
+      }
+    },
+    "paypercall-local": {
+      "command": "node",
+      "args": ["D:/workbuddy-projects/pay-per-call-gateway/bin/ppc-mcp.js"],
+      "env": {
+        "PPC_GATEWAY": "http://127.0.0.1:8300",
+        "PPC_API_KEY": "ppc_live_替换成你的key"
+      }
+    }
+  }
+}

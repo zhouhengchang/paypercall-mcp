@@ -1,0 +1,48 @@
+{
+  "name": "paypercall-mcp",
+  "version": "1.0.0",
+  "mcpName": "io.github.zhouhengchang/paypercall-mcp",
+  "description": "Pay-per-call AI capability market as an MCP server: multi-model chat, prompt packs, code templates, commercial licenses, compliance precheck and compute quotes. Every tool priced individually, no charge on failure.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "ai",
+    "x402",
+    "pay-per-call",
+    "paypercall",
+    "metering",
+    "billing",
+    "agent",
+    "llm"
+  ],
+  "license": "MIT",
+  "bin": {
+    "paypercall-mcp": "bin/ppc-mcp.js"
+  },
+  "main": "bin/ppc-mcp.js",
+  "files": [
+    "bin/",
+    "README.md",
+    "mcp.json"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node bin/ppc-mcp.js",
+    "smoke": "node bin/ppc-mcp.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhouhengchang/paypercall-mcp.git"
+  },
+  "homepage": "https://github.com/zhouhengchang/paypercall-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/zhouhengchang/paypercall-mcp/issues"
+  },
+  "author": "zhouhengchang",
+  "publishConfig": {
+    "access": "public"
+  }
+}

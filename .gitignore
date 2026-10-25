@@ -1,0 +1,29 @@
+# 运行时数据：含 API Key、后台令牌、数据库，绝不入库
+data/
+*.db
+*.db-shm
+*.db-wal
+*.log
+
+# 凭据
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*-bootstrap.txt
+
+# 打包产物
+release/*.tgz
+release/*.zip
+
+# 依赖与缓存
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/

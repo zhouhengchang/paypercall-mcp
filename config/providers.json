@@ -1,0 +1,62 @@
+{
+  "note": "上游模型路由表。cost_per_1k_input/output 单位美元，仅用于成本核算与动态定价参考，请按各厂商最新价目表自行校准。没有配 key 的 provider 会被自动跳过。",
+  "default_order": ["deepseek", "glm", "qwen", "kimi", "minimax", "hunyuan", "openrouter"],
+  "providers": {
+    "deepseek": {
+      "base_url": "https://api.deepseek.com/chat/completions",
+      "key_env": "DEEPSEEK_API_KEY",
+      "model": "deepseek-chat",
+      "style": "openai",
+      "cost_per_1k_input": 0.00027,
+      "cost_per_1k_output": 0.0011
+    },
+    "glm": {
+      "base_url": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      "key_env": "ZHIPU_API_KEY",
+      "model": "glm-4-flash",
+      "style": "openai",
+      "cost_per_1k_input": 0.0001,
+      "cost_per_1k_output": 0.0001
+    },
+    "qwen": {
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+      "key_env": "DASHSCOPE_API_KEY",
+      "model": "qwen-plus",
+      "style": "openai",
+      "cost_per_1k_input": 0.0004,
+      "cost_per_1k_output": 0.0012
+    },
+    "kimi": {
+      "base_url": "https://api.moonshot.cn/v1/chat/completions",
+      "key_env": "MOONSHOT_API_KEY",
+      "model": "moonshot-v1-8k",
+      "style": "openai",
+      "cost_per_1k_input": 0.0017,
+      "cost_per_1k_output": 0.0017
+    },
+    "minimax": {
+      "base_url": "https://api.minimax.chat/v1/text/chatcompletion_v2",
+      "key_env": "MINIMAX_API_KEY",
+      "model": "abab6.5s-chat",
+      "style": "openai",
+      "cost_per_1k_input": 0.001,
+      "cost_per_1k_output": 0.001
+    },
+    "hunyuan": {
+      "base_url": "https://api.hunyuan.cloud.tencent.com/v1/chat/completions",
+      "key_env": "HUNYUAN_API_KEY",
+      "model": "hunyuan-lite",
+      "style": "openai",
+      "cost_per_1k_input": 0.0003,
+      "cost_per_1k_output": 0.0009
+    },
+    "openrouter": {
+      "base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "key_env": "OPENROUTER_API_KEY",
+      "model": "openai/gpt-4o-mini",
+      "style": "openai",
+      "cost_per_1k_input": 0.00015,
+      "cost_per_1k_output": 0.0006
+    }
+  }
+}

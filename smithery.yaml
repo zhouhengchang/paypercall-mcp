@@ -1,0 +1,27 @@
+# Smithery / MCP 市场 上架配置
+# 说明：多数 MCP 市场不托管收款，靠这里的 apiKey 让用户填自己的 key，
+# 用户在你这边充值，钱进你的账户，市场只做分发。这是现实中最可行的一条。
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      gatewayUrl:
+        type: string
+        description: 网关地址，例如 https://api.your-domain.com
+        default: "http://127.0.0.1:8300"
+      apiKey:
+        type: string
+        description: 你在 Pay-Per-Call 后台创建的 API Key（ppc_live_ 开头）
+    required:
+      - gatewayUrl
+      - apiKey
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['bin/ppc-mcp.js'],
+      env: {
+        PPC_GATEWAY: config.gatewayUrl,
+        PPC_API_KEY: config.apiKey
+      }
+    })

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>按次计费的 AI 能力市场 · Pay-Per-Call</title>
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f7f8fa; --line:#e6e8ec; --ink:#14161a; --ink2:#5b6270;
+    --ink3:#8b93a1; --accent:#3d5afe; --accent-soft:#eef1ff; --ok:#0f9d58; --warn:#e8a33d;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(8px);z-index:10}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .logo{font-weight:700;letter-spacing:-.02em;font-size:16px}
+  .logo span{color:var(--accent)}
+  nav a{color:var(--ink2);margin-left:22px;font-size:14px}
+  nav a:hover{color:var(--ink)}
+  .hero{padding:72px 0 48px;border-bottom:1px solid var(--line)}
+  .tag{display:inline-block;font-size:12px;color:var(--accent);background:var(--accent-soft);
+    padding:4px 10px;border-radius:999px;font-weight:600;letter-spacing:.02em}
+  h1{font-size:42px;line-height:1.2;letter-spacing:-.03em;margin:18px 0 14px;font-weight:750}
+  .sub{font-size:17px;color:var(--ink2);max-width:680px}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-top:40px}
+  .metric{background:var(--bg);padding:20px}
+  .metric .k{font-size:12px;color:var(--ink3);letter-spacing:.04em}
+  .metric .v{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-top:6px}
+  section{padding:56px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:24px;letter-spacing:-.02em;margin:0 0 8px}
+  .lead{color:var(--ink2);margin:0 0 28px;max-width:720px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-weight:600;color:var(--ink3);font-size:12px;letter-spacing:.05em;
+    padding:10px 12px;border-bottom:1px solid var(--line);text-transform:uppercase}
+  td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr:hover td{background:var(--bg2)}
+  .price{font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .free{color:var(--ok);font-weight:600}
+  code,pre{font-family:"SF Mono",Consolas,Menlo,monospace;font-size:12.5px}
+  pre{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:16px;
+    overflow:auto;margin:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .card{border:1px solid var(--line);border-radius:var(--radius);padding:20px;background:var(--bg)}
+  .card h3{margin:0 0 6px;font-size:15px}
+  .card p{color:var(--ink2);font-size:13.5px;margin:0 0 14px}
+  .line-item{display:flex;justify-content:space-between;gap:12px;padding:11px 0;
+    border-bottom:1px dashed var(--line);font-size:14px}
+  .line-item:last-child{border-bottom:0}
+  .line-item span:last-child{color:var(--ink3);font-size:12.5px;text-align:right}
+  footer{padding:40px 0;color:var(--ink3);font-size:13px}
+  .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;
+    background:var(--bg2);border:1px solid var(--line);color:var(--ink2);margin-left:6px}
+  @media(max-width:820px){.metrics{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
+    h1{font-size:30px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+  <div class="logo">Pay<span>Per</span>Call</div>
+  <nav>
+    <a href="#pricing">价目</a>
+    <a href="#connect">接入</a>
+    <a href="#rails">付款方式</a>
+    <a href="/admin">运营后台</a>
+  </nav>
+</div></header>
+
+<div class="wrap hero">
+  <span class="tag">按次计费 · 失败不扣费</span>
+  <h1>每个工具都是计价单位，<br>每调用一次就结一次账。</h1>
+  <p class="sub">一个 MCP 端点 + 一份 OpenAPI 文档，把 AI 能力同时挂到 Agent 客户端、
+  平台插件市场和小程序里。按次计费、自动对账、成本与毛利实时可见。</p>
+  <div class="metrics">
+    <div class="metric"><div class="k">计费粒度</div><div class="v">1 次调用</div></div>
+    <div class="metric"><div class="k">接入方式</div><div class="v">MCP / REST</div></div>
+    <div class="metric"><div class="k">付款通道</div><div class="v">3 条</div></div>
+    <div class="metric"><div class="k">失败扣费</div><div class="v free">不扣</div></div>
+  </div>
+</div>
+
+<div class="wrap" id="pricing">
+  <section>
+    <h2>价目表</h2>
+    <p class="lead">下列价格实时从服务读取，运营改价后这里立刻同步。标注"免费"的工具不计费，
+      用于引流与自助服务，减少售后。</p>
+    <table>
+      <thead><tr><th style="width:26%">工具</th><th style="width:22%">对应收入线</th>
+        <th style="width:12%">单价</th><th>说明</th></tr></thead>
+      <tbody id="pricing-body"><tr><td colspan="4" style="color:var(--ink3)">加载中…</td></tr></tbody>
+    </table>
+  </section>
+</div>
+
+<div class="wrap" id="connect">
+  <section>
+    <h2>两种接入方式，同一套计费</h2>
+    <p class="lead">Agent 客户端连 MCP；只认 OpenAPI 的平台（扣子、钉钉、抖音、支付宝小程序等）
+      把 <code>/openapi.json</code> 直接导入成插件。</p>
+    <div class="grid2">
+      <div class="card">
+        <h3>MCP 客户端</h3>
+        <p>Claude Desktop / Cursor / 任意 MCP Host</p>
+<pre>{
+  "mcpServers": {
+    "pay-per-call": {
+      "type": "http",
+      "url": "<span id="mcp-url">http://127.0.0.1:8300</span>/mcp",
+      "headers": { "X-API-Key": "ppc_live_xxx" }
+    }
+  }
+}</pre>
+      </div>
+      <div class="card">
+        <h3>REST / 平台插件</h3>
+        <p>任何能发 HTTP 的平台插件</p>
+<pre>POST /x/llm.chat
+X-API-Key: ppc_live_xxx
+Content-Type: application/json
+
+{ "prompt": "用一句话说明什么是 MCP" }</pre>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap" id="rails">
+  <section>
+    <h2>三条收款通道，覆盖不同类型的调用方</h2>
+    <p class="lead">这是"每次调用都能收到钱"的关键：不同平台能给的东西不一样，通道必须分开设计。</p>
+    <div class="grid2">
+      <div class="card">
+        <h3>① 预充值钱包 <span class="badge">API Key</span></h3>
+        <p>平台插件只能传 header，不能签链上交易。用户充值到余额，每调用一次扣一次。</p>
+      </div>
+      <div class="card">
+        <h3>② x402 链上按次 <span class="badge">无需注册</span></h3>
+        <p>Agent 客户端没有你的账号，直接带 <code>X-PAYMENT</code> 头付款。
+          先验签、干活、成功才结算，拿不到 txHash 不算收入。</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="wrap">
+  <section style="border-bottom:0">
+    <h2>为什么失败不扣费</h2>
+    <p class="lead">上游模型挂了、SKU 不存在、参数不对，这些都不该让客户掏钱。
+      账上只记成功交付的调用，毛利曲线才可信。</p>
+    <div class="card">
+      <div class="line-item"><span>上游不可用</span><span>返回 503，进失败台账，金额 0</span></div>
+      <div class="line-item"><span>参数不合法</span><span>返回 400，不触发扣费</span></div>
+      <div class="line-item"><span>余额不足</span><span>返回 402，同时给出 x402 付款选项</span></div>
+      <div class="line-item"><span>x402 结算失败</span><span>已交付但记 0 收入 + 真实成本，亏损可见</span></div>
+    </div>
+  </section>
+</div>
+
+<footer><div class="wrap">
+  Pay-Per-Call Gateway · 遵循各平台开发者协议，不站外引导交易，不二次分发用户数据。
+</div></footer>
+
+<script>
+(async function(){
+  try{
+    const r = await fetch('/pricing');
+    const d = await r.json();
+    const tb = document.getElementById('pricing-body');
+    tb.innerHTML = d.tools.map(t => {
+      const p = t.price_usd > 0
+        ? '<span class="price">$' + t.price_usd.toFixed(4) + '</span>'
+        : '<span class="free">免费</span>';
+      return '<tr><td><code>' + t.tool + '</code></td><td>' + (t.revenue_line||'-') +
+        '</td><td>' + p + '</td><td style="color:var(--ink2)">' + (t.desc||'') + '</td></tr>';
+    }).join('');
+    document.getElementById('mcp-url').textContent = location.origin;
+  }catch(e){
+    document.getElementById('pricing-body').innerHTML =
+      '<tr><td colspan="4" style="color:#c0392b">价目加载失败：' + e.message + '</td></tr>';
+  }
+})();
+</script>
+</body>
+</html>

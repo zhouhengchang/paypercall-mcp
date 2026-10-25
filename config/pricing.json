@@ -1,0 +1,124 @@
+{
+  "version": 7,
+  "currency": "USD",
+  "money_unit": "micro_usd",
+  "note": "全部金额用整数 micro-USD 存储，1 USD = 1000000。改价只改这个文件，服务热重载，不用重启。",
+  "defaults": {
+    "min_charge_micro": 1000,
+    "markup": 2.0,
+    "free_tools": [
+      "pricing.list",
+      "policy.check",
+      "usage.report",
+      "asset.catalog"
+    ]
+  },
+  "tools": {
+    "llm.chat": {
+      "revenue_line": "AI接口按调用计费",
+      "title": "多模型统一对话",
+      "price_micro": 1500,
+      "cost_micro": 600,
+      "max_tokens_cap": 2048,
+      "desc": "一次调用内部路由到 DeepSeek / GLM / Qwen / Kimi / MiniMax / 混元 中最便宜可用的模型，按次固定价，含最多 2048 输出 token。"
+    },
+    "agent.consume": {
+      "revenue_line": "智能体订阅包次售卖",
+      "title": "智能体订阅包次扣减",
+      "price_micro": 4000,
+      "cost_micro": 1200,
+      "desc": "订阅制客户按包次消耗：校验套餐余量并发一次性权益令牌（可离线校验）。"
+    },
+    "mcp.skill.invoke": {
+      "revenue_line": "MCP技能",
+      "title": "MCP 技能代理调用",
+      "price_micro": 4000,
+      "cost_micro": 1000,
+      "desc": "把已注册的上游 MCP 工具统一收口到你这里计费，上游换实现不影响客户调用方式。"
+    },
+    "prompt.pack.get": {
+      "revenue_line": "提示词包",
+      "title": "提示词包交付",
+      "price_micro": 20000,
+      "cost_micro": 0,
+      "desc": "按 SKU 交付可商用提示词包（含系统提示词、变量说明、示例、评测要点）。"
+    },
+    "code.template.get": {
+      "revenue_line": "源码模板",
+      "title": "源码模板交付",
+      "price_micro": 90000,
+      "cost_micro": 0,
+      "desc": "按 SKU 交付可运行源码模板，附商用许可编号。"
+    },
+    "asset.license.issue": {
+      "revenue_line": "商用素材",
+      "title": "商用素材授权签发",
+      "price_micro": 30000,
+      "cost_micro": 0,
+      "desc": "签发带 HMAC 签名的商用授权凭证，买方离线可验，可用于平台申诉举证。"
+    },
+    "plugin.license.activate": {
+      "revenue_line": "插件授权",
+      "title": "插件授权激活",
+      "price_micro": 50000,
+      "cost_micro": 0,
+      "desc": "把授权绑定到机器指纹，返回可离线校验的授权令牌，防一份授权多机复用。"
+    },
+    "compute.quote": {
+      "revenue_line": "算力分销",
+      "title": "算力分销报价",
+      "price_micro": 2000,
+      "cost_micro": 500,
+      "desc": "按卡型/时长/区域返回分销报价与可用性，价差即毛利。"
+    },
+    "kb.answer": {
+      "revenue_line": "知识付费/社群服务",
+      "title": "知识库问答",
+      "price_micro": 10000,
+      "cost_micro": 800,
+      "desc": "在你自有知识库上做检索问答，返回答案 + 出处，不依赖外部大模型。"
+    },
+    "content.brief": {
+      "revenue_line": "内容商单",
+      "title": "内容商单脚本生成",
+      "price_micro": 5000,
+      "cost_micro": 800,
+      "desc": "按平台/品类/时长生成结构化口播脚本与分镜要点，交付即可给写手用。"
+    },
+    "custom.quote": {
+      "revenue_line": "定制外包",
+      "title": "定制需求预报价",
+      "price_micro": 0,
+      "cost_micro": 0,
+      "desc": "免费收集需求并落线索库（引流用），返回报价区间与交付排期，人工跟进转外包订单。"
+    },
+    "policy.check": {
+      "revenue_line": "合规底座（免费）",
+      "title": "上架合规预检",
+      "price_micro": 0,
+      "cost_micro": 0,
+      "desc": "对文案/商品描述做侵权、极限词、平台风控词预检，免费，用于降低下架风险。"
+    },
+    "asset.catalog": {
+      "revenue_line": "货架查询（免费）",
+      "title": "在售 SKU 目录",
+      "price_micro": 0,
+      "cost_micro": 0,
+      "desc": "列出全部可售提示词包/模板/素材 SKU 与价格，供 Agent 自主选购。"
+    },
+    "pricing.list": {
+      "revenue_line": "价目表（免费）",
+      "title": "价目表",
+      "price_micro": 0,
+      "cost_micro": 0,
+      "desc": "返回完整价目与计费口径。"
+    },
+    "usage.report": {
+      "revenue_line": "自助对账（免费）",
+      "title": "用量与账单",
+      "price_micro": 0,
+      "cost_micro": 0,
+      "desc": "调用方自助查询自己的用量、扣费与订单，减少售后。"
+    }
+  }
+}

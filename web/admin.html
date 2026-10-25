@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>运营后台 · Pay-Per-Call</title>
+<style>
+  :root{
+    --bg:#ffffff; --bg2:#f7f8fa; --bg3:#eef0f4; --line:#e6e8ec; --ink:#14161a;
+    --ink2:#5b6270; --ink3:#8b93a1; --accent:#3d5afe; --ok:#0f9d58; --bad:#d93025;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg2);color:var(--ink);
+    font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+  a{color:var(--accent);text-decoration:none}
+  .top{background:var(--bg);border-bottom:1px solid var(--line);padding:0 24px;height:56px;
+    display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:9}
+  .brand{font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .brand span{color:var(--accent)}
+  .main{padding:24px;max-width:1320px;margin:0 auto}
+  .card{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:18px}
+  h2{font-size:14px;font-weight:650;margin:0 0 14px;letter-spacing:.01em;display:flex;
+    align-items:center;justify-content:space-between}
+  h2 .hint{font-weight:400;color:var(--ink3);font-size:12px}
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+  .kpi{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+  .kpi .k{font-size:11.5px;color:var(--ink3);letter-spacing:.05em;text-transform:uppercase}
+  .kpi .v{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:5px;
+    font-variant-numeric:tabular-nums}
+  .kpi .s{font-size:11.5px;color:var(--ink3);margin-top:3px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11px;color:var(--ink3);letter-spacing:.05em;text-transform:uppercase;
+    padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  tbody tr:hover td{background:var(--bg2)}
+  .num{text-align:right}
+  code{font-family:"SF Mono",Consolas,monospace;font-size:12px;background:var(--bg3);
+    padding:1px 5px;border-radius:4px}
+  .pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:20px;
+    background:var(--bg3);color:var(--ink2)}
+  .pill.ok{background:#e7f5ec;color:var(--ok)}
+  .pill.bad{background:#fdecea;color:var(--bad)}
+  .pill.free{background:var(--bg3);color:var(--ink2)}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:104px;padding-top:8px}
+  .bar{flex:1;background:var(--accent);border-radius:4px 4px 0 0;min-height:2px;position:relative;
+    opacity:.85}
+  .bar:hover{opacity:1}
+  .bar-lbl{font-size:10px;color:var(--ink3);text-align:center;margin-top:5px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}
+  input,select{font:inherit;padding:7px 10px;border:1px solid var(--line);border-radius:8px;
+    background:var(--bg);color:var(--ink);outline:none}
+  input:focus,select:focus{border-color:var(--accent)}
+  button{font:inherit;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:var(--ink);cursor:pointer}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.primary:hover{filter:brightness(1.06)}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .muted{color:var(--ink3);font-size:12px}
+  #gate{position:fixed;inset:0;background:var(--bg2);display:flex;align-items:center;
+    justify-content:center;z-index:99}
+  #gate .box{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:32px;
+    width:380px;box-shadow:0 12px 40px rgba(20,22,26,.08)}
+  #gate h1{font-size:18px;margin:0 0 6px}
+  #gate p{color:var(--ink2);margin:0 0 20px;font-size:13px}
+  .err{color:var(--bad);font-size:12.5px;min-height:18px;margin-top:8px}
+  @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <h1>运营后台</h1>
+    <p>输入管理令牌（服务端 <code>data/admin_token.txt</code>）</p>
+    <div class="row" style="gap:10px">
+      <input id="tok" type="password" placeholder="adm_..." style="flex:1" autofocus>
+      <button class="primary" onclick="login()">进入</button>
+    </div>
+    <div class="err" id="gate-err"></div>
+  </div>
+</div>
+
+<div class="top">
+  <div class="brand">Pay<span>Per</span>Call · 运营后台</div>
+  <div class="row">
+    <select id="days" onchange="refresh()">
+      <option value="1">今天</option>
+      <option value="7" selected>近 7 天</option>
+      <option value="30">近 30 天</option>
+      <option value="90">近 90 天</option>
+    </select>
+    <button onclick="refresh()">刷新</button>
+    <a href="/" style="font-size:13px;margin-left:6px">落地页</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>每日收入 <span class="hint">柱高=当日收入，悬停看数值</span></h2>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div class="card">
+      <h2>收款通道分布</h2>
+      <table><thead><tr><th>通道</th><th class="num">调用</th><th class="num">收入</th></tr></thead>
+        <tbody id="rails"></tbody></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>按工具的毛利 <span class="hint">收入 − 上游成本</span></h2>
+    <table>
+      <thead><tr><th>工具</th><th class="num">调用</th><th class="num">收入</th>
+        <th class="num">成本</th><th class="num">毛利</th><th class="num">毛利率</th></tr></thead>
+      <tbody id="bytool"></tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>最近调用台账 <span class="hint">失败也记录，金额 0</span></h2>
+      <table>
+        <thead><tr><th>时间</th><th>工具</th><th>通道</th><th class="num">售价</th>
+          <th class="num">成本</th><th>状态</th></tr></thead>
+        <tbody id="ledger"></tbody>
+      </table>
+    </div>
+    <div>
+      <div class="card">
+        <h2>开新租户</h2>
+        <div class="row" style="margin-bottom:10px">
+          <input id="t-name" placeholder="名称，如 coze-bot-a" style="flex:1;min-width:140px">
+          <select id="t-plan">
+            <option value="wallet">预充值钱包</option>
+            <option value="subscription">订阅包次</option>
+          </select>
+        </div>
+        <div class="row">
+          <input id="t-amt" type="number" step="0.01" value="5" style="width:110px">
+          <select id="t-chan">
+            <option>direct</option><option>coze</option><option>dingtalk</option>
+            <option>wechat</option><option>douyin</option><option>alipay</option>
+            <option>npm</option><option>x402</option>
+          </select>
+          <button class="primary" onclick="createTenant()">生成 API Key</button>
+        </div>
+        <div class="muted" id="newkey" style="margin-top:10px;word-break:break-all"></div>
+      </div>
+      <div class="card">
+        <h2>调价 <span class="hint">改完立即生效</span></h2>
+        <div class="row">
+          <select id="p-tool" style="flex:1;min-width:150px"></select>
+          <input id="p-price" type="number" step="0.0001" placeholder="USD/次" style="width:110px">
+          <button onclick="setPrice()">保存</button>
+        </div>
+        <div class="muted" id="pmsg" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h2>手动入账</h2>
+        <div class="row">
+          <input id="r-tid" placeholder="tenant_id" style="flex:1;min-width:130px">
+          <input id="r-amt" type="number" step="0.01" value="10" style="width:96px">
+          <button onclick="recharge()">充值</button>
+        </div>
+        <div class="muted" id="rmsg" style="margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>租户</h2>
+    <table>
+      <thead><tr><th>ID</th><th>名称</th><th>渠道</th><th>套餐</th><th class="num">余额</th>
+        <th class="num">套餐余量</th><th>Key</th></tr></thead>
+      <tbody id="tenants"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>定制线索 <span class="hint">custom.quote 免费收集，人工跟进转外包</span></h2>
+    <table><thead><tr><th>时间</th><th>类型</th><th>联系方式</th><th>状态</th></tr></thead>
+      <tbody id="leads"></tbody></table>
+  </div>
+</div>
+
+<script>
+let TOKEN = localStorage.getItem('ppc_admin') || '';
+let PRICING = [];
+
+const $ = id => document.getElementById(id);
+const usd = m => '$' + (m/1000000).toFixed(4);
+const ts = t => new Date(t*1000).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',
+  hour:'2-digit',minute:'2-digit'});
+
+async function api(path, opts){
+  opts = opts || {};
+  const r = await fetch(path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({'X-Admin-Token': TOKEN}, opts.body ? {'Content-Type':'application/json'} : {}),
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (r.status === 401) { $('gate').style.display='flex'; throw new Error('unauthorized'); }
+  return r.json();
+}
+
+function login(){
+  TOKEN = $('tok').value.trim();
+  api('/admin/api/summary?days=1').then(()=>{
+    localStorage.setItem('ppc_admin', TOKEN);
+    $('gate').style.display='none';
+    refresh();
+  }).catch(()=>{ $('gate-err').textContent = '令牌不正确，或服务未启动'; });
+}
+
+async function refresh(){
+  const days = $('days').value;
+  try{
+    const s = await api('/admin/api/summary?days=' + days);
+    renderKpis(s); renderBars(s.by_day); renderRails(s.by_rail); renderByTool(s.by_tool);
+
+    const l = await api('/admin/api/ledger?limit=30');
+    $('ledger').innerHTML = l.items.map(r=>{
+      const cls = r.status === 'ok' ? 'ok' : (r.status === 'free' ? 'free' : 'bad');
+      return '<tr><td class="muted">' + ts(r.ts) + '</td><td><code>' + r.tool + '</code></td>' +
+        '<td><span class="pill">' + (r.rail||'-') + '</span></td>' +
+        '<td class="num">' + (r.price_micro ? usd(r.price_micro) : '—') + '</td>' +
+        '<td class="num">' + (r.cost_micro ? usd(r.cost_micro) : '—') + '</td>' +
+        '<td><span class="pill ' + cls + '">' + r.status + '</span></td></tr>';
+    }).join('') || '<tr><td colspan="6" class="muted">暂无调用</td></tr>';
+
+    const t = await api('/admin/api/tenants');
+    $('tenants').innerHTML = t.items.map(x=>{
+      const remain = (x.quota_micro - x.quota_used_micro);
+      return '<tr><td><code>' + x.id + '</code></td><td>' + x.name + '</td><td>' +
+        '<span class="pill">' + x.channel + '</span></td><td>' + x.plan + '</td>' +
+        '<td class="num">' + usd(x.balance_micro) + '</td>' +
+        '<td class="num">' + (x.plan === 'subscription' ? usd(remain) : '—') + '</td>' +
+        '<td class="muted">' + (x.api_key_hint||'') + '</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="muted">暂无租户</td></tr>';
+
+    const ld = await api('/admin/api/leads');
+    $('leads').innerHTML = ld.items.map(x=>
+      '<tr><td class="muted">'+ts(x.ts)+'</td><td>'+x.kind+'</td><td>'+(x.contact||'—')+
+      '</td><td><span class="pill">'+x.status+'</span></td></tr>'
+    ).join('') || '<tr><td colspan="4" class="muted">暂无线索</td></tr>';
+
+    const p = await fetch('/pricing').then(r=>r.json());
+    PRICING = p.tools;
+    $('p-tool').innerHTML = p.tools.map(x=>'<option value="'+x.tool+'">'+x.tool+
+      ' ('+x.price_usd+')</option>').join('');
+  }catch(e){ if(e.message !== 'unauthorized') console.error(e); }
+}
+
+function renderKpis(s){
+  $('kpis').innerHTML = [
+    ['收入', '$'+s.revenue_usd.toFixed(4), s.calls+' 次成功调用'],
+    ['上游成本', '$'+s.cost_usd.toFixed(4), s.failed_calls+' 次失败（不计费）'],
+    ['毛利', '$'+s.gross_usd.toFixed(4), '毛利率 '+(s.margin*100).toFixed(1)+'%'],
+    ['到账', '$'+s.payments_usd.toFixed(2), s.payments+' 笔付款'],
+    ['免费调用', (s.calls - s.by_tool.reduce((a,b)=>a+(b.rev>0?b.n:0),0)) + ' 次', '引流与自助服务'],
+  ].map(([k,v,sub])=>'<div class="kpi"><div class="k">'+k+'</div><div class="v">'+v+
+    '</div><div class="s">'+sub+'</div></div>').join('');
+}
+
+function renderBars(days){
+  if(!days || !days.length){ $('bars').innerHTML='<div class="muted">暂无数据</div>'; return; }
+  const max = Math.max.apply(null, days.map(d=>d.rev||0)) || 1;
+  $('bars').innerHTML = days.map(d=>{
+    const h = Math.max(2, Math.round((d.rev||0)/max*88));
+    const tip = d.d + '  收入 $'+((d.rev||0)/1000000).toFixed(4)+'  '+d.n+' 次';
+    return '<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end">' +
+      '<div class="bar" style="height:'+h+'px" title="'+tip+'"></div></div>';
+  }).join('') + '</div>' + '<div style="display:flex;gap:6px;margin-top:4px">' +
+    days.map(d=>'<div class="bar-lbl" style="flex:1">'+d.d.slice(5)+'</div>').join('') + '</div>';
+}
+
+function renderRails(rails){
+  $('rails').innerHTML = (rails||[]).map(r=>'<tr><td><span class="pill">'+r.rail+
+    '</span></td><td class="num">'+r.n+'</td><td class="num">'+usd(r.rev||0)+'</td></tr>').join('')
+    || '<tr><td colspan="3" class="muted">暂无数据</td></tr>';
+}
+
+function renderByTool(tools){
+  $('bytool').innerHTML = (tools||[]).map(t=>{
+    const gross = (t.rev||0)-(t.cost||0);
+    const m = t.rev ? (gross/t.rev*100).toFixed(0)+'%' : '—';
+    return '<tr><td><code>'+t.tool+'</code></td><td class="num">'+t.n+
+      '</td><td class="num">'+usd(t.rev||0)+'</td><td class="num">'+usd(t.cost||0)+
+      '</td><td class="num">'+usd(gross)+'</td><td class="num">'+m+'</td></tr>';
+  }).join('') || '<tr><td colspan="6" class="muted">暂无数据</td></tr>';
+}
+
+async function createTenant(){
+  const body = {name: $('t-name').value || 'unnamed', plan: $('t-plan').value,
+    channel: $('t-chan').value,
+    balance_usd: $('t-plan').value === 'wallet' ? Number($('t-amt').value) : 0,
+    quota_usd: $('t-plan').value === 'subscription' ? Number($('t-amt').value) : 0};
+  const r = await api('/admin/api/tenants', {method:'POST', body});
+  $('newkey').innerHTML = '已创建 <code>'+r.id+'</code><br>API Key（只显示一次）：<code>'+
+    r.api_key+'</code>';
+  refresh();
+}
+async function setPrice(){
+  const usdVal = Number($('p-price').value);
+  if(!usdVal && usdVal !== 0) return;
+  const r = await api('/admin/api/price', {method:'POST',
+    body:{tool:$('p-tool').value, price_micro: Math.round(usdVal*1000000)}});
+  $('pmsg').textContent = r.error ? ('失败：'+r.error) : ('已生效：'+r.tool+' = $'+r.price_usd+'/次');
+  refresh();
+}
+async function recharge(){
+  const r = await api('/admin/api/recharge', {method:'POST',
+    body:{tenant_id:$('r-tid').value.trim(), amount_usd:Number($('r-amt').value)}});
+  $('rmsg').textContent = r.error ? ('失败：'+r.error) : ('已入账，当前余额 $'+
+    (r.tenant.balance_micro/1000000).toFixed(2));
+  refresh();
+}
+
+if (TOKEN) {
+  api('/admin/api/summary?days=1').then(()=>{ $('gate').style.display='none'; refresh(); })
+    .catch(()=>{ $('gate').style.display='flex'; });
+}
+$('tok').addEventListener('keydown', e=>{ if(e.key==='Enter') login(); });
+</script>
+</body>
+</html>
