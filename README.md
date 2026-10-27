@@ -29,8 +29,12 @@
 
 ```bash
 cd D:/workbuddy-projects/pay-per-call-gateway
+cp .env.example .env      # 填上游 key、后台令牌、x402 收款地址
 python app.py
 ```
+
+`.env` 在启动时自动加载（已被 `.gitignore` 忽略），已存在的环境变量优先，
+所以 `DEEPSEEK_API_KEY=xxx python app.py` 这种临时覆盖仍然有效。
 
 启动后：
 
