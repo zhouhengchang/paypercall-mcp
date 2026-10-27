@@ -28,6 +28,28 @@ from urllib.parse import urlparse, parse_qs
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE_DIR)
 
+
+def load_dotenv():
+    """读取项目根目录 .env（已在 .gitignore 里）。已存在的环境变量优先，不覆盖。"""
+    path = os.path.join(BASE_DIR, ".env")
+    if not os.path.exists(path):
+        return 0
+    n = 0
+    with open(path, "r", encoding="utf-8-sig") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ and v:
+                os.environ[k] = v
+                n += 1
+    return n
+
+
+load_dotenv()
+
 import billing  # noqa: E402
 import payments  # noqa: E402
 import tools as tools_mod  # noqa: E402

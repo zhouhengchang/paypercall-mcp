@@ -51,17 +51,22 @@ def call(method, path, token, body=None):
 
 
 def changed_files():
-    out = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
-                         capture_output=True, text=True).stdout
+    out = subprocess.run(["git", "status", "--porcelain", "-z"], cwd=ROOT,
+                         capture_output=True).stdout.decode("utf-8")
     files = []
-    for line in out.splitlines():
-        if len(line) < 4:
+    for chunk in out.split("\0"):
+        if len(chunk) < 4:
             continue
-        p = line[3:].strip()
-        if p.startswith('"') and p.endswith('"'):
-            p = p[1:-1]
+        p = chunk[3:]
         files.append(p)
     return files
+
+
+def files_since(rev):
+    """用 -z 读文件列表，避免中文路径被 shell 转义拆坏。"""
+    out = subprocess.run(["git", "diff", "--name-only", "-z", rev, "HEAD"],
+                         cwd=ROOT, capture_output=True).stdout.decode("utf-8")
+    return [p for p in out.split("\0") if p]
 
 
 def main():
@@ -69,7 +74,11 @@ def main():
         print(__doc__)
         return 2
     token, msg = sys.argv[1], sys.argv[2]
-    files = sys.argv[3:] or changed_files()
+    rest = sys.argv[3:]
+    if rest and rest[0] == "--since":
+        files = files_since(rest[1])
+    else:
+        files = rest or changed_files()
     if not files:
         print("没有要提交的文件")
         return 0
