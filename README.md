@@ -27,6 +27,18 @@
 
 ## 快速开始
 
+**方式一：直接用已发布的 npm 包（推荐）**
+
+```bash
+npx -y meterpay-mcp
+```
+
+已上架：<https://www.npmjs.com/package/meterpay-mcp> · v1.0.0
+（原名 `pay-per-call-mcp` 被他人占用，`paypercall-mcp` 被 npm 判为名称过于相似而拒收，
+最终用 `meterpay-mcp` 发布。）
+
+**方式二：本地跑服务端**
+
 ```bash
 cd D:/workbuddy-projects/pay-per-call-gateway
 cp .env.example .env      # 填上游 key、后台令牌、x402 收款地址
@@ -63,7 +75,24 @@ python app.py
 ```json
 {
   "mcpServers": {
-    "pay-per-call": {
+    "meterpay": {
+      "command": "npx",
+      "args": ["-y", "meterpay-mcp"],
+      "env": {
+        "PPC_GATEWAY": "https://你的域名",
+        "PPC_API_KEY": "ppc_live_xxx"
+      }
+    }
+  }
+}
+```
+
+在本机调试服务端时，把上面换成直接指向本地文件：
+
+```json
+{
+  "mcpServers": {
+    "meterpay-local": {
       "command": "node",
       "args": ["D:/workbuddy-projects/pay-per-call-gateway/bin/ppc-mcp.js"],
       "env": {

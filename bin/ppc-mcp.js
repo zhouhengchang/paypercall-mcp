@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * paypercall-mcp — stdio MCP 桥
+ * meterpay-mcp — stdio MCP 桥
  *
  * 作用：让只支持 stdio 的 MCP 客户端（Claude Desktop / Cursor / 各类 IDE 插件）
  * 连上远端的按次计费网关。所有 JSON-RPC 消息原样转发到 gatewayUrl/mcp，

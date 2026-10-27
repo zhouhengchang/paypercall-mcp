@@ -1,6 +1,6 @@
 {
-  "name": "paypercall-mcp",
-  "version": "1.0.0",
+  "name": "meterpay-mcp",
+  "version": "1.0.1",
   "mcpName": "io.github.zhouhengchang/paypercall-mcp",
   "description": "Pay-per-call AI capability market as an MCP server: multi-model chat, prompt packs, code templates, commercial licenses, compliance precheck and compute quotes. Every tool priced individually, no charge on failure.",
   "keywords": [
@@ -18,7 +18,7 @@
   ],
   "license": "MIT",
   "bin": {
-    "paypercall-mcp": "bin/ppc-mcp.js"
+    "meterpay-mcp": "bin/ppc-mcp.js"
   },
   "main": "bin/ppc-mcp.js",
   "files": [
