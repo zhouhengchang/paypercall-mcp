@@ -161,6 +161,34 @@ class Gateway(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def _static(self, relpath):
+        """只允许 web/ 下的白名单后缀，防止路径穿越。"""
+        relpath = relpath.replace("\\", "/").lstrip("/")
+        if ".." in relpath.split("/"):
+            return self._json({"error": "bad_path"}, 400)
+        ext = os.path.splitext(relpath)[1].lower()
+        ctypes = {".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                  ".png": "image/png", ".webp": "image/webp",
+                  ".svg": "image/svg+xml", ".css": "text/css; charset=utf-8",
+                  ".js": "application/javascript; charset=utf-8",
+                  ".ico": "image/x-icon"}
+        if ext not in ctypes:
+            return self._json({"error": "unsupported_type"}, 404)
+        full = os.path.join(BASE_DIR, "web", relpath)
+        if not os.path.exists(full):
+            return self._json({"error": "not_found"}, 404)
+        with open(full, "rb") as f:
+            raw = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", ctypes[ext])
+        self.send_header("Content-Length", str(len(raw)))
+        self.send_header("Cache-Control", "public, max-age=86400")
+        self.end_headers()
+        try:
+            self.wfile.write(raw)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def _text(self, text, content_type="text/plain; charset=utf-8", code=200):
         raw = text.encode("utf-8")
         self.send_response(code)
@@ -209,6 +237,10 @@ class Gateway(BaseHTTPRequestHandler):
                                    "x402": X402.enabled})
             if p == "/pricing":
                 return self._json(self.pricing_payload())
+            if p == "/topup":
+                return self._json(self.topup_payload())
+            if p.startswith("/assets/"):
+                return self._static(p[1:])
             if p == "/openapi.json":
                 return self._json(self.openapi_payload())
             if p == "/llms.txt":
@@ -234,6 +266,8 @@ class Gateway(BaseHTTPRequestHandler):
         try:
             if p == "/mcp":
                 return self.handle_mcp()
+            if p == "/topup/claim":
+                return self.handle_topup_claim()
             if p.startswith("/x/"):
                 return self.handle_rest_tool(p[3:])
             if p.startswith("/webhook/"):
@@ -649,6 +683,37 @@ class Gateway(BaseHTTPRequestHandler):
                                "effective": "立即生效，无需重启"})
         if path == "/admin/api/leads":
             return self._json({"items": STORE.leads(100)})
+        if path == "/admin/api/topups":
+            status = q.get("status", [None])[0]
+            return self._json({"items": STORE.topups(200, status)})
+        if path == "/admin/api/topups/approve":
+            data = json.loads((body or b"{}").decode("utf-8") or "{}")
+            tid = data.get("topup_id")
+            if not tid:
+                return self._json({"error": "topup_id_required"}, 400)
+            try:
+                out = STORE.approve_topup(tid, reviewer="admin",
+                                          name=data.get("name"))
+            except KeyError:
+                return self._json({"error": "topup_not_found"}, 404)
+            except ValueError as e:
+                return self._json({"error": str(e)}, 409)
+            out["note"] = ("api_key 只显示这一次，请立即发给客户并保存"
+                           if out.get("api_key") else "已叠加到原有余额")
+            return self._json(out)
+        if path == "/admin/api/topups/reject":
+            data = json.loads((body or b"{}").decode("utf-8") or "{}")
+            tid = data.get("topup_id")
+            if not tid:
+                return self._json({"error": "topup_id_required"}, 400)
+            try:
+                out = STORE.reject_topup(tid, reviewer="admin",
+                                         reason=data.get("reason"))
+            except KeyError:
+                return self._json({"error": "topup_not_found"}, 404)
+            except ValueError as e:
+                return self._json({"error": str(e)}, 409)
+            return self._json(out)
         if path == "/admin/api/reload":
             n = TOOLS.reload_inventory()
             PRICING.reload()
@@ -658,6 +723,94 @@ class Gateway(BaseHTTPRequestHandler):
                 "SELECT * FROM payments ORDER BY id DESC LIMIT 100").fetchall()
             return self._json({"items": [dict(r) for r in rows]})
         return self._json({"error": "not_found"}, 404)
+
+    # ---------------- 扫码充值 ----------------
+
+    def topup_payload(self):
+        t = CFG.get("topup") or {}
+        chans = []
+        for c in t.get("channels") or []:
+            chans.append({
+                "id": c.get("id"), "name": c.get("name"),
+                "qr": (c.get("qr") or ""), "kind": c.get("kind"),
+                "note": c.get("note"),
+                "url": (CFG.get("public_base_url") or "").rstrip("/") + (c.get("qr") or ""),
+            })
+        return {
+            "enabled": bool(t.get("enabled")),
+            "fx_cny_per_usd": t.get("fx_cny_per_usd"),
+            "min_cny": t.get("min_cny"),
+            "auto_approve": bool(t.get("auto_approve")),
+            "plans": t.get("plans") or [],
+            "channels": chans,
+            "flow": [
+                "选择套餐，扫码付款（金额必须与套餐一致）",
+                "在下方回填付款交易号后四位/整串 + 联系方式",
+                "后台核对到账后自动开通 API Key 并发放等值额度",
+                "额度按次扣费，失败不扣，可随时在后台对账",
+            ],
+            "note": "个人/经营收款码没有支付回调，无法自动确认到账，"
+                    "因此采用人工核对（通常 10 分钟内）。这不是收不到钱，"
+                    "而是避免把未到账的订单当已付款。",
+        }
+
+    def handle_topup_claim(self):
+        raw = self._body()
+        try:
+            d = json.loads(raw.decode("utf-8") or "{}")
+        except Exception:  # noqa: BLE001
+            return self._json({"ok": False, "error": "bad_json"}, 400)
+
+        t = CFG.get("topup") or {}
+        if not t.get("enabled"):
+            return self._json({"ok": False, "error": "topup_disabled"}, 503)
+
+        plan_id = (d.get("plan_id") or "").strip()
+        channel = (d.get("channel") or "").strip()
+        payer_ref = (d.get("payer_ref") or "").strip()
+        contact = (d.get("contact") or "").strip()
+
+        plans = {p.get("id"): p for p in (t.get("plans") or [])}
+        chan_ids = {c.get("id") for c in (t.get("channels") or [])}
+
+        if plan_id not in plans:
+            return self._json({"ok": False, "error": "unknown_plan",
+                               "plans": list(plans.keys())}, 400)
+        if channel not in chan_ids:
+            return self._json({"ok": False, "error": "unknown_channel",
+                               "channels": list(chan_ids)}, 400)
+        if len(payer_ref) < 4:
+            return self._json({"ok": False, "error": "payer_ref_too_short",
+                               "hint": "请填付款交易号，至少 4 位"}, 400)
+        if len(contact) < 4:
+            return self._json({"ok": False, "error": "contact_required",
+                               "hint": "留一个能联系到你的邮箱或微信号"}, 400)
+
+        # 同一交易号不能重复提交（防一码多报）
+        dup = STORE.conn().execute(
+            "SELECT id,status FROM topups WHERE payer_ref=? AND channel=?",
+            (payer_ref, channel)).fetchone()
+        if dup:
+            return self._json({"ok": False, "error": "duplicate_payer_ref",
+                               "existing": dict(dup),
+                               "hint": "该交易号已提交过，请勿重复提交"}, 409)
+
+        plan = plans[plan_id]
+        credit = billing.to_micro(plan.get("credit_usd") or 0)
+        tid = STORE.create_topup(plan_id, plan.get("cny") or 0, credit, channel,
+                                 payer_ref, contact, d.get("note"))
+        # 记线索，便于后续跟进转化
+        STORE.save_lead(None, "topup", contact,
+                        {"topup_id": tid, "plan_id": plan_id,
+                         "channel": channel, "cny": plan.get("cny")})
+        return self._json({
+            "ok": True,
+            "topup_id": tid,
+            "status": "pending",
+            "credit_usd": plan.get("credit_usd"),
+            "cny": plan.get("cny"),
+            "next": "等后台核对到账（通常 10 分钟内），完成后会用你留的联系方式发 API Key",
+        }, 201)
 
     # ---------------- 对外元数据 ----------------
 

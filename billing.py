@@ -195,6 +195,23 @@ CREATE TABLE IF NOT EXISTS leads (
   payload    TEXT,
   status     TEXT NOT NULL DEFAULT 'new'
 );
+CREATE TABLE IF NOT EXISTS topups (
+  id           TEXT PRIMARY KEY,
+  ts           INTEGER NOT NULL,
+  plan_id      TEXT,
+  cny          REAL NOT NULL DEFAULT 0,
+  credit_micro INTEGER NOT NULL DEFAULT 0,
+  channel      TEXT NOT NULL,
+  payer_ref    TEXT NOT NULL,
+  contact      TEXT NOT NULL,
+  note         TEXT,
+  status       TEXT NOT NULL DEFAULT 'pending',
+  tenant_id    TEXT,
+  reviewed_at  INTEGER,
+  reviewer     TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_topups_ts ON topups(ts);
+CREATE INDEX IF NOT EXISTS idx_topups_status ON topups(status);
 """
 
 
@@ -412,6 +429,87 @@ class Store(object):
             "SELECT * FROM leads ORDER BY ts DESC LIMIT ?", (limit,)
         ).fetchall()
         return [dict(r) for r in rows]
+
+    # ---------- 扫码充值（人工确认）----------
+    #
+    # 个人/经营收款码没有回调通知，无法自动入账。这里的流程刻意做成
+    # 用户提交 -> 后台人工核对 -> 一键入账并下发 API Key，
+    # 而不是假装能自动到账。伪造"自动确认"会让真实付款人拿不到额度。
+
+    def create_topup(self, plan_id, cny, credit_micro, channel, payer_ref,
+                     contact, note=None):
+        tid = "TP" + uuid.uuid4().hex[:10].upper()
+        self.conn().execute(
+            "INSERT INTO topups(id,ts,plan_id,cny,credit_micro,channel,payer_ref,"
+            "contact,note,status) VALUES(?,?,?,?,?,?,?,?,?, 'pending')",
+            (tid, now(), plan_id, float(cny), int(credit_micro), channel,
+             payer_ref, contact, note),
+        )
+        self.conn().commit()
+        return tid
+
+    def topup(self, tid):
+        row = self.conn().execute("SELECT * FROM topups WHERE id=?", (tid,)).fetchone()
+        return dict(row) if row else None
+
+    def topups(self, limit=100, status=None):
+        if status:
+            rows = self.conn().execute(
+                "SELECT * FROM topups WHERE status=? ORDER BY ts DESC LIMIT ?",
+                (status, limit)).fetchall()
+        else:
+            rows = self.conn().execute(
+                "SELECT * FROM topups ORDER BY ts DESC LIMIT ?", (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
+    def approve_topup(self, tid, reviewer="admin", name=None):
+        """确认到账：不存在租户则新建并返回一次性 api_key，否则直接加余额。"""
+        t = self.topup(tid)
+        if not t:
+            raise KeyError("topup_not_found")
+        if t["status"] != "pending":
+            raise ValueError("already_%s" % t["status"])
+        api_key = None
+        tenant_id = t["tenant_id"]
+        if tenant_id and self.tenant(tenant_id):
+            self.recharge(tenant_id, t["credit_micro"], rail="qr_" + t["channel"],
+                          ref=tid)
+        else:
+            tenant_id, api_key = self.create_tenant(
+                name or ("qr-" + t["contact"][:24]),
+                channel="qr_" + t["channel"], plan="wallet",
+                balance_micro=t["credit_micro"],
+                meta={"topup": tid, "contact": t["contact"]},
+            )
+            self.conn().execute(
+                "INSERT INTO payments(ts,tenant_id,rail,amount_micro,status,raw) "
+                "VALUES(?,?,?,?, 'credited', ?)",
+                (now(), tenant_id, "qr_" + t["channel"], t["credit_micro"],
+                 json.dumps({"ref": tid, "cny": t["cny"]}, ensure_ascii=False)),
+            )
+        self.conn().execute(
+            "UPDATE topups SET status='approved', tenant_id=?, reviewed_at=?, "
+            "reviewer=? WHERE id=?",
+            (tenant_id, now(), reviewer, tid),
+        )
+        self.conn().commit()
+        return {"tenant_id": tenant_id, "api_key": api_key,
+                "credit_usd": round(t["credit_micro"] / 1e6, 4)}
+
+    def reject_topup(self, tid, reviewer="admin", reason=None):
+        t = self.topup(tid)
+        if not t:
+            raise KeyError("topup_not_found")
+        if t["status"] != "pending":
+            raise ValueError("already_%s" % t["status"])
+        self.conn().execute(
+            "UPDATE topups SET status='rejected', reviewed_at=?, reviewer=?, "
+            "note=COALESCE(note,'')||? WHERE id=?",
+            (now(), reviewer, (" | reject: " + (reason or "")) if reason else "",
+             tid),
+        )
+        self.conn().commit()
+        return {"ok": True, "status": "rejected"}
 
     # ---------- 报表 ----------
 

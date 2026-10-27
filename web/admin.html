@@ -173,6 +173,16 @@
   </div>
 
   <div class="card">
+    <h2>待核对充值 <span class="hint">客户扫码付款后提交的单，核对到账再点开通</span></h2>
+    <table>
+      <thead><tr><th>单号</th><th>时间</th><th>渠道</th><th class="num">付款</th>
+        <th class="num">额度</th><th>交易号</th><th>联系方式</th><th>操作</th></tr></thead>
+      <tbody id="topups"></tbody>
+    </table>
+    <div class="muted" id="tpmsg" style="margin-top:10px"></div>
+  </div>
+
+  <div class="card">
     <h2>租户</h2>
     <table>
       <thead><tr><th>ID</th><th>名称</th><th>渠道</th><th>套餐</th><th class="num">余额</th>
@@ -243,8 +253,19 @@ async function refresh(){
         '<td class="muted">' + (x.api_key_hint||'') + '</td></tr>';
     }).join('') || '<tr><td colspan="7" class="muted">暂无租户</td></tr>';
 
-    const ld = await api('/admin/api/leads');
-    $('leads').innerHTML = ld.items.map(x=>
+    const tp = await api('/admin/api/topups?status=pending');
+    $('topups').innerHTML = tp.items.map(x=>
+      '<tr><td><code>' + x.id + '</code></td><td class="muted">' + ts(x.ts) + '</td>' +
+      '<td><span class="pill">' + x.channel + '</span></td>' +
+      '<td class="num">¥' + x.cny + '</td>' +
+      '<td class="num">' + usd(x.credit_micro) + '</td>' +
+      '<td><code style="font-size:11px">' + x.payer_ref + '</code></td>' +
+      '<td>' + x.contact + '</td>' +
+      '<td><button onclick="approveTopup(\'' + x.id + '\')">开通</button> ' +
+      '<button onclick="rejectTopup(\'' + x.id + '\')" style="background:#9aa3b2">驳回</button></td></tr>'
+    ).join('') || '<tr><td colspan="8" class="muted">暂无待核对充值</td></tr>';
+
+    const ld = await api('/admin/api/leads');    $('leads').innerHTML = ld.items.map(x=>
       '<tr><td class="muted">'+ts(x.ts)+'</td><td>'+x.kind+'</td><td>'+(x.contact||'—')+
       '</td><td><span class="pill">'+x.status+'</span></td></tr>'
     ).join('') || '<tr><td colspan="4" class="muted">暂无线索</td></tr>';
@@ -254,6 +275,41 @@ async function refresh(){
     $('p-tool').innerHTML = p.tools.map(x=>'<option value="'+x.tool+'">'+x.tool+
       ' ('+x.price_usd+')</option>').join('');
   }catch(e){ if(e.message !== 'unauthorized') console.error(e); }
+}
+
+async function approveTopup(id){
+  if(!confirm('确认这笔钱已真实到账？\n确认后会立刻开通 API Key 并发放额度，不可自动撤回。')){
+    return;
+  }
+  const box = $('tpmsg');
+  box.textContent = '处理中…';
+  try{
+    const d = await api('/admin/api/topups/approve', {method:'POST', body:{topup_id:id}});
+    if(d.error){
+      box.textContent = '失败：' + d.error +
+        (d.error === 'already_approved' ? '（这笔已开通过，别重复给额度）' : '');
+      return;
+    }
+    if(d.api_key){
+      box.innerHTML = '已开通。租户 <code>' + d.tenant_id + '</code>，额度 $' + d.credit_usd +
+        '<br>API Key 只显示这一次，立刻发给客户：<br>' +
+        '<code style="user-select:all;font-size:12.5px">' + d.api_key + '</code>';
+    }else{
+      box.textContent = '已叠加到原租户 ' + d.tenant_id + '，额度 +$' + d.credit_usd;
+    }
+    refresh();
+  }catch(e){ box.textContent = '出错：' + e.message; }
+}
+
+async function rejectTopup(id){
+  const reason = prompt('驳回原因（客户看不到，仅内部记录）：', '未查到到账记录');
+  if(reason === null) return;
+  const box = $('tpmsg');
+  try{
+    const d = await api('/admin/api/topups/reject', {method:'POST', body:{topup_id:id, reason:reason}});
+    box.textContent = d.error ? ('失败：' + d.error) : '已驳回 ' + id;
+    refresh();
+  }catch(e){ box.textContent = '出错：' + e.message; }
 }
 
 function renderKpis(s){

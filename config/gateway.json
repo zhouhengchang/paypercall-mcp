@@ -20,6 +20,34 @@
     "max_timeout_seconds": 120,
     "allow_networks": ["base-sepolia", "base"]
   },
+  "topup": {
+    "enabled": true,
+    "fx_cny_per_usd": 7.5,
+    "min_cny": 15,
+    "auto_approve": false,
+    "channels": [
+      {
+        "id": "wechat",
+        "name": "微信支付",
+        "qr": "/assets/pay-wechat.jpg",
+        "kind": "merchant",
+        "note": "微信经营收款码，可直接付款，备注填你的充值单号"
+      },
+      {
+        "id": "alipay",
+        "name": "支付宝",
+        "qr": "/assets/pay-alipay.jpg",
+        "kind": "personal",
+        "note": "个人收款码，单笔建议 ≤ ¥200，付款后务必回填交易号"
+      }
+    ],
+    "plans": [
+      { "id": "p15", "cny": 15, "credit_usd": 2, "label": "试用" },
+      { "id": "p75", "cny": 75, "credit_usd": 10, "label": "标准" },
+      { "id": "p375", "cny": 375, "credit_usd": 50, "label": "团队" },
+      { "id": "p1500", "cny": 1500, "credit_usd": 200, "label": "规模" }
+    ]
+  },
   "webhooks": {
     "wechatpay": { "secret_env": "WECHATPAY_WEBHOOK_SECRET", "credit_unit": "micro_usd" },
     "alipay": { "secret_env": "ALIPAY_WEBHOOK_SECRET", "credit_unit": "micro_usd" },

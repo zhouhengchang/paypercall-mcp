@@ -27,3 +27,7 @@ __pycache__/
 # 编辑器
 .vscode/
 .idea/
+
+# 收款码：含实名与收款信息，不进公开仓库
+web/assets/pay-*.jpg
+web/assets/pay-*.png

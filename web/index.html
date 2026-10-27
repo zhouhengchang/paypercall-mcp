@@ -58,7 +58,33 @@
   .badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;
     background:var(--bg2);border:1px solid var(--line);color:var(--ink2);margin-left:6px}
   @media(max-width:820px){.metrics{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
-    h1{font-size:30px}}
+    h1{font-size:30px}.form-row{grid-template-columns:1fr}}
+  .qr-card{text-align:center}
+  .qr{width:100%;max-width:228px;border:1px solid var(--line);border-radius:12px;
+    display:block;margin:0 auto;background:#fff}
+  .qr-card .amt{font-size:12.5px;color:var(--ink3);margin-top:10px;line-height:1.6}
+  .qr-box{position:relative;max-width:228px;margin:0 auto}
+  .qr-miss{display:none;align-items:center;justify-content:center;flex-direction:column;
+    height:228px;border:1px dashed var(--line);border-radius:12px;color:var(--ink3);
+    font-size:12.5px;text-align:center;padding:14px;line-height:1.7;gap:6px}
+  .qr-miss code{font-size:11px;color:var(--ink2);word-break:break-all}
+  .qr-card .kind{font-size:11px;padding:2px 7px;border-radius:5px;margin-left:6px}
+  .kind.merchant{background:#eefaf1;color:#12693c;border:1px solid #bfe8cd}
+  .kind.personal{background:#fff7ec;color:#8a5b13;border:1px solid #f0dcb8}
+  label{display:block;font-size:13px;color:var(--ink2);margin:14px 0 6px;font-weight:600}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);
+    border-radius:9px;font:inherit;font-size:14px;background:var(--bg);color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft)}
+  button{margin-top:18px;padding:11px 22px;border:0;border-radius:9px;background:var(--accent);
+    color:#fff;font:inherit;font-weight:600;cursor:pointer}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .result{margin-top:16px;font-size:13.5px;padding:14px;border-radius:10px;display:none;
+    white-space:pre-wrap;word-break:break-all}
+  .result.ok{display:block;background:#eefaf1;border:1px solid #bfe8cd;color:#12693c}
+  .result.err{display:block;background:#fdeeee;border:1px solid #f3c9c9;color:#a3282b}
+  ol.flow{margin:0 0 18px;padding-left:20px;color:var(--ink2);font-size:13.5px;line-height:1.9}
 </style>
 </head>
 <body>
@@ -66,6 +92,7 @@
   <div class="logo">Pay<span>Per</span>Call</div>
   <nav>
     <a href="#pricing">价目</a>
+    <a href="#topup">充值</a>
     <a href="#connect">接入</a>
     <a href="#rails">付款方式</a>
     <a href="/admin">运营后台</a>
@@ -95,6 +122,49 @@
         <th style="width:12%">单价</th><th>说明</th></tr></thead>
       <tbody id="pricing-body"><tr><td colspan="4" style="color:var(--ink3)">加载中…</td></tr></tbody>
     </table>
+  </section>
+</div>
+
+<div class="wrap" id="topup">
+  <section>
+    <h2>扫码充值，核对后开通</h2>
+    <p class="lead">选套餐 → 扫码付款 → 回填交易号。后台核对到账后自动开通 API Key 并发放等值额度，
+      额度按次扣费、失败不扣、随时对账。</p>
+    <div class="grid2" id="qr-grid">
+      <div class="card"><p style="margin:0">加载收款方式…</p></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>已付款？在这里提交</h3>
+      <p>付款金额请与所选套餐完全一致；交易号用于核对，填错会导致开通延迟。</p>
+      <form id="topup-form" autocomplete="off">
+        <div class="form-row">
+          <div>
+            <label for="f-plan">套餐</label>
+            <select id="f-plan" required></select>
+          </div>
+          <div>
+            <label for="f-channel">付款方式</label>
+            <select id="f-channel" required></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="f-ref">付款交易号</label>
+            <input id="f-ref" required minlength="4" maxlength="64"
+                   placeholder="微信/支付宝账单里的交易单号">
+          </div>
+          <div>
+            <label for="f-contact">联系方式</label>
+            <input id="f-contact" required minlength="4" maxlength="80"
+                   placeholder="邮箱或微信号，用来发 API Key">
+          </div>
+        </div>
+        <label for="f-note">备注（可选）</label>
+        <input id="f-note" maxlength="200" placeholder="公司/团队名、需要开发票等">
+        <button type="submit" id="f-submit">提交，等待核对开通</button>
+        <div class="result" id="f-result"></div>
+      </form>
+    </div>
   </section>
 </div>
 
@@ -184,6 +254,86 @@ Content-Type: application/json
     document.getElementById('pricing-body').innerHTML =
       '<tr><td colspan="4" style="color:#c0392b">价目加载失败：' + e.message + '</td></tr>';
   }
+})();
+
+/* ---- 扫码充值 ---- */
+window.qrMissing = function(img){
+  img.style.display = 'none';
+  const m = img.nextElementSibling;
+  if(m){ m.style.display = 'flex'; }
+};
+(async function(){
+  const grid = document.getElementById('qr-grid');
+  const planSel = document.getElementById('f-plan');
+  const chanSel = document.getElementById('f-channel');
+  const res = document.getElementById('f-result');
+  let cfg = null;
+  try{
+    cfg = await (await fetch('/topup')).json();
+  }catch(e){
+    grid.innerHTML = '<div class="card"><p style="margin:0;color:#a3282b">收款配置加载失败：'
+      + e.message + '</p></div>';
+    return;
+  }
+  if(!cfg.enabled){
+    grid.innerHTML = '<div class="card"><p style="margin:0">当前未开启扫码充值。</p></div>';
+    return;
+  }
+  grid.innerHTML = cfg.channels.map(function(c){
+    var tag = c.kind === 'merchant'
+      ? '<span class="kind merchant">经营码</span>'
+      : '<span class="kind personal">个人码·小额</span>';
+    return '<div class="card qr-card"><h3>' + c.name + tag + '</h3>' +
+      '<div class="qr-box">' +
+      '<img class="qr" src="' + c.qr + '" alt="' + c.name + '收款码" loading="lazy"' +
+      ' onerror="window.qrMissing(this)">' +
+      '<div class="qr-miss">收款码未放置<br><code>' + c.qr + '</code></div>' +
+      '</div>' +
+      '<div class="amt">' + (c.note || '') + '</div></div>';
+  }).join('');
+
+  planSel.innerHTML = cfg.plans.map(function(p){
+    return '<option value="' + p.id + '">' + p.label + ' · ¥' + p.cny +
+      ' → $' + p.credit_usd + ' 额度</option>';
+  }).join('');
+  chanSel.innerHTML = cfg.channels.map(function(c){
+    return '<option value="' + c.id + '">' + c.name + '</option>';
+  }).join('');
+
+  const form = document.getElementById('topup-form');
+  const btn = document.getElementById('f-submit');
+  form.addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    res.className = 'result'; res.textContent = '';
+    btn.disabled = true; btn.textContent = '提交中…';
+    try{
+      const resp = await fetch('/topup/claim', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          plan_id: planSel.value,
+          channel: chanSel.value,
+          payer_ref: document.getElementById('f-ref').value.trim(),
+          contact: document.getElementById('f-contact').value.trim(),
+          note: document.getElementById('f-note').value.trim()
+        })
+      });
+      const d = await resp.json();
+      if(resp.ok && d.ok){
+        res.className = 'result ok';
+        res.textContent = '已提交，充值单号 ' + d.topup_id +
+          '\n金额 ¥' + d.cny + ' / 额度 $' + d.credit_usd + '\n' + d.next;
+        form.reset();
+      }else{
+        res.className = 'result err';
+        res.textContent = '提交失败：' + (d.hint || d.error || ('HTTP ' + resp.status));
+      }
+    }catch(e){
+      res.className = 'result err';
+      res.textContent = '网络错误：' + e.message;
+    }finally{
+      btn.disabled = false; btn.textContent = '提交，等待核对开通';
+    }
+  });
 })();
 </script>
 </body>
