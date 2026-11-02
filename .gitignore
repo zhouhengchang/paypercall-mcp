@@ -31,3 +31,6 @@ __pycache__/
 # 收款码：含实名与收款信息，不进公开仓库
 web/assets/pay-*.jpg
 web/assets/pay-*.png
+
+# 构建产物：由 scripts/build_product.py 生成，不入库
+products/
