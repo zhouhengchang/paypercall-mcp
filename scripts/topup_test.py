@@ -8,7 +8,7 @@ import time
 import urllib.error
 import urllib.request
 
-BASE = "http://127.0.0.1:8300"
+BASE = os.environ.get("PPC_TEST_BASE") or "http://127.0.0.1:8300"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 

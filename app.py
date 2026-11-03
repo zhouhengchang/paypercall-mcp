@@ -167,6 +167,22 @@ class Gateway(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def base_url(self):
+        """对外地址。
+
+        配置里写的是真实域名就一直用配置；写的是 127.0.0.1/localhost（本地开发默认值），
+        就按请求头推——反向代理后面部署时环境变量 PORT/Host 由平台注入，
+        写死本地地址会导致返回给客户端的充值链接、x402 resource 全是 127.0.0.1。
+        """
+        cfg = (CFG.get("public_base_url") or "").rstrip("/")
+        if cfg and "127.0.0.1" not in cfg and "localhost" not in cfg \
+                and "0.0.0.0" not in cfg:
+            return cfg
+        host = (self.headers.get("X-Forwarded-Host")
+                or self.headers.get("Host") or "127.0.0.1")
+        proto = self.headers.get("X-Forwarded-Proto") or "http"
+        return "%s://%s" % (proto.split(",")[0].strip(), host.split(",")[0].strip())
+
     def _html(self, path, code=200):
         full = os.path.join(BASE_DIR, "web", path)
         if not os.path.exists(full):
@@ -514,7 +530,7 @@ class Gateway(BaseHTTPRequestHandler):
             return {"need_payment": True}
         if not X402.enabled:
             return {"need_payment": True, "x402_disabled": True}
-        resource = (CFG.get("public_base_url") or "").rstrip("/") + "/mcp"
+        resource = self.base_url() + "/mcp"
         requirements = X402.accepts(resource, price, "%s (per call)" % tool_name)[0]
         try:
             payload = X402.decode_header(header)
@@ -535,7 +551,7 @@ class Gateway(BaseHTTPRequestHandler):
                 "payer": vinfo.get("payer") or info.get("payer"), "nonce": nonce}
 
     def payment_required(self, mid, tool_name, price, extra):
-        resource = (CFG.get("public_base_url") or "").rstrip("/") + "/mcp"
+        resource = self.base_url() + "/mcp"
         accepts = X402.accepts(resource, price, "%s (per call)" % tool_name) if X402.enabled else []
         content = [{
             "type": "text",
@@ -562,7 +578,7 @@ class Gateway(BaseHTTPRequestHandler):
                     "wallet": "用 X-API-Key，后台充值后按次扣费",
                     "subscription": "购买包次套餐，扣套餐余量",
                 },
-                "topup_url": (CFG.get("public_base_url") or "") + "/#pricing",
+                "topup_url": self.base_url() + "/#pricing",
             },
             "result": {
                 "content": content,
@@ -756,7 +772,7 @@ class Gateway(BaseHTTPRequestHandler):
                 "id": c.get("id"), "name": c.get("name"),
                 "qr": (c.get("qr") or ""), "kind": c.get("kind"),
                 "note": c.get("note"),
-                "url": (CFG.get("public_base_url") or "").rstrip("/") + (c.get("qr") or ""),
+                "url": self.base_url() + (c.get("qr") or ""),
             })
         return {
             "enabled": bool(t.get("enabled")),
@@ -847,7 +863,7 @@ class Gateway(BaseHTTPRequestHandler):
                 "failed_calls": "免费，不扣费", "tools": out}
 
     def x402_discovery(self):
-        base = (CFG.get("public_base_url") or "").rstrip("/")
+        base = self.base_url()
         return {
             "x402Version": 1,
             "resources": [{
@@ -861,7 +877,7 @@ class Gateway(BaseHTTPRequestHandler):
         }
 
     def openapi_payload(self):
-        base = (CFG.get("public_base_url") or "").rstrip("/")
+        base = self.base_url()
         paths = {
             "/mcp": {
                 "post": {
@@ -909,7 +925,7 @@ class Gateway(BaseHTTPRequestHandler):
         }
 
     def llms_txt(self):
-        base = (CFG.get("public_base_url") or "").rstrip("/")
+        base = self.base_url()
         lines = [
             "# Pay-Per-Call AI Marketplace",
             "",
@@ -948,7 +964,7 @@ def bootstrap():
 
 def main():
     bootstrap()
-    port = int(os.environ.get("PPC_PORT") or CFG["port"])
+    port = int(os.environ.get("PORT") or os.environ.get("PPC_PORT") or CFG["port"])
     srv = ThreadingHTTPServer((CFG["host"], port), Gateway)
     srv.daemon_threads = True
     base = CFG.get("public_base_url") or "http://127.0.0.1:%d" % port

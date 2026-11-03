@@ -1,7 +1,7 @@
 {
   "port": 8300,
   "host": "0.0.0.0",
-  "public_base_url": "http://127.0.0.1:8300",
+  "public_base_url": "",
   "db_path": "data/gateway.db",
   "pricing_file": "config/pricing.json",
   "providers_file": "config/providers.json",
@@ -10,7 +10,7 @@
   "admin_token_file": "data/admin_token.txt",
   "license_secret_file": "data/license_secret.txt",
   "x402": {
-    "enabled": true,
+    "enabled": false,
     "facilitator": "https://x402.org/facilitator",
     "network": "base-sepolia",
     "pay_to": "0x0000000000000000000000000000000000000000",
@@ -44,8 +44,7 @@
     "plans": [
       { "id": "p15", "cny": 15, "credit_usd": 2, "label": "试用" },
       { "id": "p75", "cny": 75, "credit_usd": 10, "label": "标准" },
-      { "id": "p375", "cny": 375, "credit_usd": 50, "label": "团队" },
-      { "id": "p1500", "cny": 1500, "credit_usd": 200, "label": "规模" }
+      { "id": "p375", "cny": 375, "credit_usd": 50, "label": "团队" }
     ]
   },
   "webhooks": {
